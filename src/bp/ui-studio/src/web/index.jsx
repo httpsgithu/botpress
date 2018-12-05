@@ -9,6 +9,7 @@ import { getToken } from '~/util/Auth'
 import PropTypes from 'expose-loader?PropTypes!prop-types'
 import ReactBootstrap from 'expose-loader?ReactBootstrap!react-bootstrap'
 import ContentPickerWidget from 'expose-loader?BotpressContentPicker!~/components/Content/Select/Widget'
+import { BrowserRouter } from 'react-router-dom'
 import { Provider } from 'react-redux'
 /* eslint-enable */
 
@@ -31,7 +32,9 @@ const App = require('./components/App').default
 ReactDOM.render(
   <Provider store={store}>
     <HotKeys keyMap={keyMap}>
-      <App />
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
     </HotKeys>
   </Provider>,
   document.getElementById('app')

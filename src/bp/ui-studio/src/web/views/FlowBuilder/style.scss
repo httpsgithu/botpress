@@ -59,6 +59,7 @@
 }
 
 .sidePanel {
+  display: none; // Mode this in the header
   width: 100%;
   height: calc(100vh - 93px);
   background: #fafafa;

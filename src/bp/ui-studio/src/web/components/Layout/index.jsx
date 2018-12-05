@@ -4,7 +4,7 @@ import { connect } from 'react-redux'
 
 import classnames from 'classnames'
 import { ToastContainer } from 'react-toastify'
-import { Route, Switch, Redirect } from 'react-router-dom'
+import { Route, Switch, Redirect, Link, NavLink, Router, BrowserRouter } from 'react-router-dom'
 
 import Header from './Header'
 import Sidebar from './Sidebar'
@@ -23,8 +23,9 @@ import PluginInjectionSite from '~/components/PluginInjectionSite'
 
 import { viewModeChanged } from '~/actions'
 
-import style from './style.scss'
+import stylus from './Layout.styl'
 import StatusBar from './StatusBar'
+import menu from './menu.styl'
 
 class Layout extends React.Component {
   state = {
@@ -51,18 +52,44 @@ class Layout extends React.Component {
       return null
     }
 
-    const hasHeader = this.props.viewMode <= 2
-    const classNames = classnames({
-      [style.container]: hasHeader,
-      'bp-container': hasHeader
-    })
+    // const hasHeader = this.props.viewMode <= 2
+    // const classNames = classnames({
+    //   [style.container]: hasHeader,
+    //   'bp-container': hasHeader
+    // })
 
     return (
-      <div>
-        <aside className={style.aside}>
-          <Sidebar>
-            <Header />
-            <section className={classNames}>
+      <div className={stylus.container}>
+        <main className={stylus.main}>
+          <header className={stylus.mainHeader}>Header</header>
+          <div className={stylus.mainContent}>
+            <aside className={stylus.aside}>
+              <img src="stylus/assets/logo.svg" className={stylus.aside__logo} />
+              <nav role="menubar" className={menu.navigation}>
+                <ul role="menu" className={menu.navigationList}>
+                  <li role="menuitem" className={menu.navigation__item}>
+                    <a role="link" href="#" className={menu.navigation__link}>
+                      <span className={menu.navigation__icon} />
+                      Dashboard
+                    </a>
+                  </li>
+                  <li role="menuitem" className={menu.navigation__item}>
+                    <Link to="/content">Content</Link>
+                  </li>
+                  <li role="menuitem" className={menu.navigation__item}>
+                    <a role="link" href="#" className={menu.navigation__link}>
+                      Version Control
+                    </a>
+                  </li>
+                  <li role="menuitem" className={menu.navigation__item}>
+                    <Link to="/flows">Flows</Link>
+                  </li>
+                </ul>
+                <ul role="menu" className={classnames(menu.navigationList, 'bp-navbar-module-buttons')} />
+                <ul role="menu" className={classnames(menu.navigationList, 'nav.navbar-nav')} />
+              </nav>
+            </aside>
+            <main>
               <Switch>
                 <Route exact path="/" render={() => <Redirect to="/flows" />} />
                 <Route exact path="/content" component={Content} />
@@ -76,19 +103,19 @@ class Layout extends React.Component {
                 <Route exact path="/notifications" component={Notifications} />
                 <Route exact path="/logs" component={Logs} />
               </Switch>
-            </section>
-          </Sidebar>
-        </aside>
-        <ToastContainer position="bottom-right" />
-        <SidebarFooter />
+            </main>
+          </div>
+          <StatusBar
+            botName={this.botName}
+            botpressVersion={this.botpressVersion}
+            moduleEvent={this.state.statusBarModuleEvent}
+          />
+        </main>
+        {/* <ToastContainer position="bottom-right" /> */}
+        {/* <SidebarFooter /> */}
         <PluginInjectionSite site="overlay" />
         <BackendToast />
-        <SelectContentManager />
-        <StatusBar
-          botName={this.botName}
-          botpressVersion={this.botpressVersion}
-          moduleEvent={this.state.statusBarModuleEvent}
-        />
+        {/* <SelectContentManager /> */}
       </div>
     )
   }

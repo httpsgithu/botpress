@@ -11,7 +11,7 @@
     width: 100%;
 }
 
-.main-header {
+.mainHeader {
     background-color: var(--c-background--dark-2)
     border-bottom: 1px solid var(--c-background--dark-3);
     align-items: center;
@@ -25,6 +25,8 @@
     overflow-x: hidden;
     transition: var(--t-default);
     width: 4rem;
+    height: 100%;
+    position: fixed;
 
     &:hover {
         width: 25rem;
@@ -35,14 +37,14 @@
         width: 9rem;
     }
 
-    &-tabs {
+    &Tabs {
         background-color: #ccc;
         margin-left: auto;
         width: 2rem;
     }
 }
 
-.main-content {
+.mainContent {
     color: var(--c-text)
     display: flex;
     grid-area: main;

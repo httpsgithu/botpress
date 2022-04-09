@@ -22,7 +22,7 @@
   "dependencies": {
     "@blueprintjs/datetime": "^3.15.2",
     "classnames": "^2.2.6",
-    "moment": "^2.24.0",
+    "moment": "^2.29.2",
     "react-copy-to-clipboard": "^5.0.2",
     "react-day-picker": "^7.4.0",
     "react-icons": "^3.8.0",

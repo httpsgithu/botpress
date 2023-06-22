@@ -36,13 +36,13 @@ const AgentStatus: FC<Props> = ({ bp }) => {
   }
 
   useEffect(() => {
-    // tslint:disable-next-line: no-floating-promises
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     getCurrentAgent()
   }, [])
 
   useEffect(() => {
     bp.events.on(`${WEBSOCKET_TOPIC}:${window.BOT_ID}`, handleMessage)
-    return () => bp.events.off(`hitlnext:${window.BOT_ID}`, handleMessage)
+    return () => bp.events.off(`${WEBSOCKET_TOPIC}:${window.BOT_ID}`, handleMessage)
   }, [])
 
   return <AgentIcon online={state.currentAgent?.online} />

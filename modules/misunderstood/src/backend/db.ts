@@ -14,10 +14,10 @@ import {
   RESOLUTION_TYPE
 } from '../types'
 
-import applyChanges from './applyChanges'
+import { applyChanges } from './applyChanges'
 
-const TABLE_NAME = 'misunderstood'
-const EVENTS_TABLE_NAME = 'events'
+export const TABLE_NAME = 'misunderstood'
+export const EVENTS_TABLE_NAME = 'events'
 
 export default class Db {
   knex: Knex & sdk.KnexExtension
@@ -32,7 +32,7 @@ export default class Db {
       table.string('eventId')
       table.string('botId')
       table.string('language')
-      table.string('preview')
+      table.text('preview')
       table.enum('reason', Object.values(FLAG_REASON))
       table.enum('status', FLAGGED_MESSAGE_STATUSES).defaultTo(FLAGGED_MESSAGE_STATUS.new)
       table.enum('resolutionType', Object.values(RESOLUTION_TYPE))
@@ -44,10 +44,28 @@ export default class Db {
   }
 
   async addEvent(event: FlaggedEvent) {
-    await this.knex(TABLE_NAME).insert(event)
+    const lookup = { botId: event.botId, language: event.language, preview: event.preview }
+    const treatedEvents = await this.knex(TABLE_NAME)
+      .count({ count: 'id' })
+      .where(lookup)
+      .andWhereNot({ status: FLAGGED_MESSAGE_STATUS.new })
+
+    if (treatedEvents.length > 0 && treatedEvents[0].count > 0) {
+      this.bp.logger.info(
+        `Not inserting event with properies ${JSON.stringify(lookup)} as it has already been treated before`
+      )
+    } else {
+      await this.knex(TABLE_NAME).insert(event)
+    }
   }
 
-  async updateStatus(botId: string, id: string, status: FLAGGED_MESSAGE_STATUS, resolutionData?: ResolutionData) {
+  async deleteAll(botId: string, status: FLAGGED_MESSAGE_STATUS) {
+    await this.knex(TABLE_NAME)
+      .where({ botId, status })
+      .del()
+  }
+
+  async updateStatuses(botId: string, ids: string[], status: FLAGGED_MESSAGE_STATUS, resolutionData?: ResolutionData) {
     if (status !== FLAGGED_MESSAGE_STATUS.pending) {
       resolutionData = { resolutionType: null, resolution: null, resolutionParams: null }
     } else {
@@ -55,7 +73,10 @@ export default class Db {
     }
 
     await this.knex(TABLE_NAME)
-      .where({ botId, id })
+      .where({ botId })
+      .andWhere(function() {
+        this.whereIn('id', ids)
+      })
       .update({ status, ...resolutionData, updatedAt: this.knex.fn.now() })
   }
 
@@ -105,6 +126,10 @@ export default class Db {
       .select('*')
       .then((data: DbFlaggedEvent[]) => (data && data.length ? data[0] : null))
 
+    if (!event) {
+      return
+    }
+
     const parentEvent = await this.knex(EVENTS_TABLE_NAME)
       .where({ botId, incomingEventId: event.eventId, direction: 'incoming' })
       .select('id', 'threadId', 'sessionId', 'event', 'createdOn')
@@ -122,24 +147,25 @@ export default class Db {
     // I wrap the timestamp string to a Date
     const messageCreatedOnAsDate = moment(messageCreatedOn).toDate()
 
-    const [messagesBefore, messagesAfter] = await Promise.all([
-      this.knex(EVENTS_TABLE_NAME)
-        .where({ botId, threadId, sessionId })
-        .andWhere(this.knex.date.isBeforeOrOn('createdOn', messageCreatedOnAsDate))
-        // Two events with different id can have same createdOn
-        .orderBy([
-          { column: 'createdOn', order: 'desc' },
-          { column: 'id', order: 'desc' }
-        ])
-        .limit(6) // More messages displayed before can help user understand conversation better
-        .select('id', 'event', 'createdOn'),
-      this.knex(EVENTS_TABLE_NAME)
-        .where({ botId, threadId, sessionId })
-        .andWhere(this.knex.date.isAfter('createdOn', messageCreatedOnAsDate))
-        .orderBy(['createdOn', 'id'])
-        .limit(3)
-        .select('id', 'event', 'createdOn')
-    ])
+    const messagesBefore = await this.knex(EVENTS_TABLE_NAME)
+      .where({ botId, threadId, sessionId })
+      .andWhere(this.knex.date.isBeforeOrOn('createdOn', messageCreatedOnAsDate))
+      // Two events with different id can have same createdOn
+      .orderBy([
+        { column: 'createdOn', order: 'desc' },
+        { column: 'id', order: 'desc' }
+      ])
+      .limit(6) // More messages displayed before can help user understand conversation better
+      .select('id', 'event', 'createdOn')
+    const messagesAfter = await this.knex(EVENTS_TABLE_NAME)
+      .where({ botId, threadId, sessionId })
+      .andWhere(this.knex.date.isAfter('createdOn', messageCreatedOnAsDate))
+      .orderBy([
+        { column: 'createdOn', order: 'asc' },
+        { column: 'id', order: 'asc' }
+      ])
+      .limit(3)
+      .select('id', 'event', 'createdOn')
 
     const context = _.chain([...messagesBefore, ...messagesAfter])
       .sortBy(['createdOn', 'id'])
@@ -147,6 +173,8 @@ export default class Db {
         const eventObj = typeof event === 'string' ? JSON.parse(event) : event
         return {
           direction: eventObj.direction,
+          type: eventObj.type,
+          payload: eventObj.payload,
           preview: (eventObj.preview || '').replace(/<[^>]*>?/gm, ''),
           payloadMessage: get(eventObj, 'payload.message'),
           isCurrent: id === messageId

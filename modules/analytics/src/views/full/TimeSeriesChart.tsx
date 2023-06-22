@@ -19,7 +19,7 @@ interface Props extends Extras {
   channels: Channel[]
 }
 
-const formatTick = timestamp => moment.unix(timestamp).format('D')
+const formatTick = timestamp => moment.unix(timestamp).format('D/M')
 const formatTootilTick = timestamp => moment.unix(timestamp).format('dddd, MMMM Do YYYY')
 
 const TimeSeriesChart: FC<Props> = props => {
@@ -53,7 +53,7 @@ const TimeSeriesChart: FC<Props> = props => {
                 height={28}
                 dataKey="time"
                 minTickGap={0}
-                interval={0}
+                interval={Math.floor(data.length / 12)}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={formatTick}
